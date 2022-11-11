@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 public interface StudentRepository
         extends JpaRepository<Student, Long> {
     @Query("" +
-            "SELECT CASE WHEN COUNT(s) > 0 THEN " +
+            "SELECT CASE WHEN COUNT(s) > 0 THEN " + // + can we comment it out?
             "TRUE ELSE FALSE END " +
             "FROM Student s " +
             "WHERE s.email = ?1" // first argument of selectExistsEmail()

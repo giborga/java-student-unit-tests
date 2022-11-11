@@ -7,14 +7,15 @@ import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
-@ToString
-@Getter
-@Setter
-@EqualsAndHashCode
-@NoArgsConstructor
-@AllArgsConstructor
+@Data // lombock - hides getters and setters
+//@ToString
+//@Getter
+//@Setter
+//@EqualsAndHashCode // override if object is same hashcode will be same as well
+@NoArgsConstructor // empty
+@AllArgsConstructor // with id
 @Entity
-@Table
+@Table // do we need this?
 public class Student {
     @Id
     @SequenceGenerator(

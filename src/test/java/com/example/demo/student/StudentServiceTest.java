@@ -3,6 +3,7 @@ package com.example.demo.student;
 import com.example.demo.student.exception.BadRequestException;
 import com.example.demo.student.exception.StudentNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -16,19 +17,20 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+// not have anything with jpa
 @ExtendWith(MockitoExtension.class) // this extension is used to open and close mocks
 class StudentServiceTest {
 
     // reference to student repo. need to mock it
     @Mock private StudentRepository studentRepository; // we tested it and now we know that all methods there work and we can mock it
     //private AutoCloseable autoCloseable;
-    private StudentService underTest;
+    private StudentService underTest; // what are we testing
 
     @BeforeEach // will get a fresh instance for student every test
     void setUp() {
         // if we have more than one mock it will initialise all mocks in this class
         //autoCloseable = MockitoAnnotations.openMocks(this); // in order to initialise StudentRepository mock use Mockito
-        underTest = new StudentService(studentRepository);
+        underTest = new StudentService(studentRepository); // create servise with repo
     }
 
     //@AfterEach // to close the resource after the test
@@ -38,7 +40,7 @@ class StudentServiceTest {
 
     // we don't test real student repo (doesnt create db / tables etc.)
     @Test
-    void GetAllStudentsSuccess() {
+    void GetAllStudentsSuccess() { // SR is already tested and we know that every method there works
         // when
         underTest.getAllStudents();
         // then: verify that findAll() method from JPA repository was invoked. Ex. if replace findAll() with deleteAll() - test fails.
@@ -54,14 +56,16 @@ class StudentServiceTest {
         Student student = new Student("Inha", "pali@gmail.com", Gender.FEMALE);
         underTest.addStudent(student);
 
-        // then
+        // then - no save because mock. only captor has this student
         ArgumentCaptor<Student> studentArgumentCaptor = ArgumentCaptor.forClass(Student.class);
         verify(studentRepository) // we want to verify that repository was called with save() method + does verify return?
                 .save(studentArgumentCaptor.capture()); // we want to capture the actual student that was passed inside the save method: studentRepository.save(student);
 
+        System.out.println(studentArgumentCaptor);
+
         // assert
         Student capturedStudent = studentArgumentCaptor.getValue(); // student should be == to the one that is got by Captor in the end of the test
-        System.out.println(capturedStudent.getId());
+        //System.out.println(capturedStudent); // + it was not saved in fact
         assertThat(capturedStudent).isEqualTo(student); // + diff b/w isEqualTo and equals? / what does assertThat() return?
     }
 
@@ -80,7 +84,7 @@ class StudentServiceTest {
         // assert: the result we expect
         // in SS existsEmail is false because this email does not exist in repo
         // exception will be thrown only if existsEmail is true (cant add new student because email is taken)
-        assertThatThrownBy(() -> underTest.addStudent(student)) // assertThatThrownBy() takes lambda
+        assertThatThrownBy(() -> underTest.addStudent(student)) // assertThatThrownBy() takes lambda + what  is lambda
                 .isInstanceOf(BadRequestException.class)// throw new BadRequestException
                 .hasMessageContaining("Email " + student.getEmail() + " taken"); // if message is copied - it should be exact copy from SS and in case of mistake in the message will throw "Email pali@gmail.com taken" that we dont want to
 
@@ -90,21 +94,26 @@ class StudentServiceTest {
 
 
     @Test // + check that the student deleted is the student passed??
+    // shall we use argument capturer here?
+    @Disabled
     void deleteStudentSuccess() {
 
-        // when
         Student student = new Student("Inha", "pali@gmail.com", Gender.FEMALE);
+
         student.setId(1L); // set random id
-        System.out.println(student.getId());
 
         studentRepository.deleteById(student.getId());
 
-        verify(studentRepository).deleteById(student.getId());
+        // then - no save because mock. only captor has this student
+        ArgumentCaptor<Long> idArgumentCaptor = ArgumentCaptor.forClass(Long.class);
+        verify(studentRepository)
+                .deleteById(idArgumentCaptor.capture());
 
         // assert
-        assertThat(1L).isEqualTo(student.getId());
-    }
+        Long capturedStudent = idArgumentCaptor.getValue();
+        assertThat(capturedStudent).isEqualTo(student.getId());
 
+    }
 
     @Test // + check it!
     void DeleteThrowsExceptionWhenStudentIdDoesNotExist() {
