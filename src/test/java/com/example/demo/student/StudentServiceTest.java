@@ -3,7 +3,6 @@ package com.example.demo.student;
 import com.example.demo.student.exception.BadRequestException;
 import com.example.demo.student.exception.StudentNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -24,13 +23,13 @@ class StudentServiceTest {
     // reference to student repo. need to mock it
     @Mock private StudentRepository studentRepository; // we tested it and now we know that all methods there work and we can mock it
     //private AutoCloseable autoCloseable;
-    private StudentService underTest; // what are we testing
+    private StudentService studentService; // what are we testing
 
     @BeforeEach // will get a fresh instance for student every test
     void setUp() {
         // if we have more than one mock it will initialise all mocks in this class
         //autoCloseable = MockitoAnnotations.openMocks(this); // in order to initialise StudentRepository mock use Mockito
-        underTest = new StudentService(studentRepository); // create servise with repo
+        studentService = new StudentService(studentRepository); // create servise with repo
     }
 
     //@AfterEach // to close the resource after the test
@@ -42,7 +41,7 @@ class StudentServiceTest {
     @Test
     void GetAllStudentsSuccess() { // SR is already tested and we know that every method there works
         // when
-        underTest.getAllStudents();
+        studentService.getAllStudents();
         // then: verify that findAll() method from JPA repository was invoked. Ex. if replace findAll() with deleteAll() - test fails.
         // because getAllStudents from Service invokes getAllStudents from Repository who invokes findAll from JPA
         verify(studentRepository).findAll();
@@ -54,7 +53,7 @@ class StudentServiceTest {
 
         // when
         Student student = new Student("Inha", "pali@gmail.com", Gender.FEMALE);
-        underTest.addStudent(student);
+        studentService.addStudent(student);
 
         // then - no save because mock. only captor has this student
         ArgumentCaptor<Student> studentArgumentCaptor = ArgumentCaptor.forClass(Student.class);
@@ -84,7 +83,7 @@ class StudentServiceTest {
         // assert: the result we expect
         // in SS existsEmail is false because this email does not exist in repo
         // exception will be thrown only if existsEmail is true (cant add new student because email is taken)
-        assertThatThrownBy(() -> underTest.addStudent(student)) // assertThatThrownBy() takes lambda + what  is lambda
+        assertThatThrownBy(() -> studentService.addStudent(student)) // assertThatThrownBy() takes lambda + what  is lambda
                 .isInstanceOf(BadRequestException.class)// throw new BadRequestException
                 .hasMessageContaining("Email " + student.getEmail() + " taken"); // if message is copied - it should be exact copy from SS and in case of mistake in the message will throw "Email pali@gmail.com taken" that we dont want to
 
@@ -94,15 +93,16 @@ class StudentServiceTest {
 
 
     @Test // + check that the student deleted is the student passed??
-    // shall we use argument capturer here?
-    @Disabled
+        // shall we use argument capturer here?
     void deleteStudentSuccess() {
 
         Student student = new Student("Inha", "pali@gmail.com", Gender.FEMALE);
 
         student.setId(1L); // set random id
 
-        studentRepository.deleteById(student.getId());
+        given(studentRepository.existsById(anyLong())).willReturn(true);
+
+        studentService.deleteStudent(student.getId());
 
         // then - no save because mock. only captor has this student
         ArgumentCaptor<Long> idArgumentCaptor = ArgumentCaptor.forClass(Long.class);
@@ -115,9 +115,9 @@ class StudentServiceTest {
 
     }
 
-    @Test // + check it!
-    void DeleteThrowsExceptionWhenStudentIdDoesNotExist() {
 
+    @Test
+    void DeleteThrowsExceptionWhenStudentIdDoesNotExist() {
         // when
         // then
         Student student = new Student("Inha", "pali@gmail.com", Gender.FEMALE);
@@ -128,7 +128,7 @@ class StudentServiceTest {
                 .willReturn(false); // enforces that in any case existsById returns false
 
         // assert: the result we expect: throw exception if id is not there
-        assertThatThrownBy(() -> underTest.deleteStudent(student.getId())) // assertThatThrownBy() takes lambda
+        assertThatThrownBy(() -> studentService.deleteStudent(student.getId())) // assertThatThrownBy() takes lambda
                 .isInstanceOf(StudentNotFoundException.class)// throw new StudentNotFoundException
                 .hasMessageContaining("Student with id " + student.getId() + " does not exists");
 
